@@ -47,6 +47,7 @@ public class Receiver {
 			 */
 			try {
 				byte[] recieveData = new byte[1024];
+				System.out.println("here");
 				DatagramPacket senderData = new DatagramPacket(recieveData, recieveData.length);
 				server.receive(senderData);
 				String receive = new String(senderData.getData());
@@ -61,12 +62,18 @@ public class Receiver {
 				String checksum = receive.substring(32, 48);
 				String type = receive.substring(48, 64);
 				String data = receive.substring(64, receive.length());
+				System.out.println("seq: "+seq);
+				System.out.println("checksum: "+checksum);
+				System.out.println("type: "+type);
+				System.out.println("data: "+data);
 				if (type.equals("1111111111111111")) {
 					flag = 1;
 				}
-				if (r <= rec.probability) {
-					System.out.println("Packet Loss Sequence Number =" + s);
-				} else if ((rec.createChecksum(data.getBytes(), checksum.getBytes()).equals("0000000000000000"))) {
+//				if (r <= rec.probability) {
+//					System.out.println("Packet Loss Sequence Number =" + s);
+//				} else 
+					if ((rec.createChecksum(data.getBytes(), checksum.getBytes()).equals("1111111111111111"))) {
+						System.out.println("checksum is ok");
 					if (s == index) {
 						String ack = rec.createACK(s);
 						InetAddress addr = senderData.getAddress();
@@ -85,18 +92,11 @@ public class Receiver {
 				// TODO: handle exception
 				System.err.println(e);
 			}
-			 FileOutputStream out = new FileOutputStream(fileName);
-			 incomingdata.writeTo(out);
-			 out.close();
-			 server.close();
-
-			/*
-			 * String recievedData = new String(senderData.getData());
-			 * 
-			 * out.write(recievedData); out.close();
-			 */
-			// System.out.print(" Recieved :" + recievedData);
 		}
+		 FileOutputStream out = new FileOutputStream(fileName);
+		 incomingdata.writeTo(out);
+		 out.close();
+		 server.close();
 	}
 
 	public String createACK(int seqno) {

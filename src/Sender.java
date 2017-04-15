@@ -20,36 +20,47 @@ public class Sender {
 	int windowSize;
 	int mss;
 	int NoOfPackets;
+	InetAddress ip;
 	byte[] data;
 	ArrayList<byte[]> segments;
 
-	public Sender(String hostName, int portNumber, String fileName, int windowSize, int mss) throws IOException {
+	public Sender(String hostName, int portNumber, String fileName, int windowSize, int mss, InetAddress ip) throws IOException {
 		this.hostName = hostName;
 		this.portNumber = portNumber;
 		this.fileName = fileName;
 		this.windowSize = windowSize;
 		this.mss = mss;
+		this.ip=ip;
 		Path file = Paths.get(fileName);
 		this.data = Files.readAllBytes(file);
 		this.NoOfPackets = data.length / this.mss;
 		int j = 0;
 		int k = mss;
+		segments = new ArrayList<>();
+		System.out.println("Data length: "+data.length);
+		System.out.println("Packets: "+this.NoOfPackets);
+		System.out.println("mss: "+this.mss);
 		for (int i = 0; i < this.NoOfPackets; i++) {
 			byte[] segmentSize = new byte[this.mss];
+			if(k>data.length)
+				k=data.length;
 			segmentSize = Arrays.copyOfRange(this.data, j, k);
 			j = j + mss;
 			k = k + mss;
-			this.segments.add(segmentSize);
+			System.out.println("size "+segmentSize.length);
+			this.segments.add(i, segmentSize);
+			System.out.println(this.segments);
 		}
 	}
+	
 
 	public String createChecksum(byte[] segment) {
 		int length = segment.length;
 		int Word, Checksum = 0;
 
-		while (length > 0) // len = Total num of bytes
+		int i = 0;
+		while (length > 0 && i<segment.length-1) // len = Total num of bytes
 		{
-			int i = 0;
 			Word = ((segment[i] << 8) + segment[i + 1]) + Checksum;
 
 			Checksum = Word & 0x0FFFF; // Discard the carry if any
@@ -66,13 +77,27 @@ public class Sender {
 		return Integer.toBinaryString(Checksum);
 
 	}
-
+	public void lastPacket(DatagramSocket s)
+	{
+		byte[] lastpacket = "1111111111111111111111111111111111111111111111111111111111111111000000".getBytes();
+		
+		DatagramPacket lastPacket = new DatagramPacket(lastpacket, lastpacket.length,this.ip,this.portNumber);
+		try {
+			s.send(lastPacket);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}// remove seqno
 	public String createheader(int seqno, ArrayList<byte[]> segments, int index) {
-		String seq = Integer.toBinaryString(seqno);
+		String seq = Integer.toBinaryString(index);
 		String check = this.createChecksum(segments.get(index));
 		String field = "0101010101010101";
+		for(int i= seq.length();i<32;i++)
+			seq = "0" + seq;
 		String header = seq + check + field;
-		System.out.println(header);
+		System.out.println("seq:"+seq+" check: "+check+" field: "+field);
 		return header;
 
 	}
@@ -117,10 +142,11 @@ public class Sender {
 		int windowSize = sc.nextInt();
 		System.out.println("Enter the MSS: ");
 		int mss = sc.nextInt();
-		Sender sender = new Sender(hostName, portNumber, fileName, windowSize, mss);
+		InetAddress IPAddress = InetAddress.getByName(hostName);
+		Sender sender = new Sender(hostName, portNumber, fileName, windowSize, mss,IPAddress);
 		DatagramSocket client = new DatagramSocket();
 
-		InetAddress IPAddress = InetAddress.getByName(sender.hostName);
+		int seq = 0;
 		int startIndex = 0, i = 0, count = 0;
 		while (startIndex < sender.NoOfPackets) {
 
@@ -132,16 +158,18 @@ public class Sender {
 				for (int k = 0; k < headbytes.length; k++) {
 					finalPacket[k] = headbytes[k];
 				}
-				for (int j = headbytes.length; j < headbytes.length + sender.mss; j++) {
-					finalPacket[j] = databytes[j];
+				for (int j = headbytes.length, k=0; j < headbytes.length + sender.mss; j++, k++) {
+					finalPacket[j] = databytes[k];
 				}
 				DatagramPacket send = new DatagramPacket(finalPacket, finalPacket.length, IPAddress, sender.portNumber);
 				client.send(send);
+				System.out.println("sent:"+startIndex);
 				i++;
 				startIndex++;
+				count++;
 			}
+			System.out.println("Receiving with i:"+i+" index: "+startIndex);
 			byte[] receiveData = new byte[2048];
-			int seq = 0;
 			DatagramPacket receivePckt = new DatagramPacket(receiveData, receiveData.length);
 			try {
 				client.setSoTimeout(1000);
@@ -150,6 +178,7 @@ public class Sender {
 					seq = sender.getpacket(receivePckt); // getting the sequence
 															// no of the
 															// received packet
+					System.out.println("ACK received with seq: "+seq);
 					if (seq == startIndex - 1) { // if last acknowledgement is
 													// received
 						i = 0;
@@ -164,9 +193,12 @@ public class Sender {
 				}
 			} catch (SocketTimeoutException s) {
 				System.out.println("Timeout, sequence number = " + seq);
+				startIndex = seq;
+				i = 0;
 			}
 
 		}
-
+		sender.lastPacket(client);
 	}
+	
 }
