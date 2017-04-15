@@ -2,12 +2,16 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+
+import sun.font.CreatedFontTracker;
 
 public class Sender {
 	String hostName;
@@ -46,14 +50,7 @@ public class Sender {
 		while (length > 0) // len = Total num of bytes
 		{
 			int i = 0;
-			Word = ((segment[i] << 8) + segment[i + 1]) + Checksum; // get two
-																	// bytes at
-																	// a time
-																	// and add
-																	// previous
-																	// calculated
-																	// checksum
-																	// value
+			Word = ((segment[i] << 8) + segment[i + 1]) + Checksum;
 
 			Checksum = Word & 0x0FFFF; // Discard the carry if any
 
@@ -72,7 +69,7 @@ public class Sender {
 
 	public String createheader(int seqno, ArrayList<byte[]> segments, int index) {
 		String seq = Integer.toBinaryString(seqno);
-		String check = createChecksum(segments.get(index));
+		String check = this.createChecksum(segments.get(index));
 		String field = "0101010101010101";
 		String header = seq + check + field;
 		System.out.println(header);
@@ -92,10 +89,10 @@ public class Sender {
 	}
 
 	public int getpacket(DatagramPacket datapacket) {
-		int binToDec = 0;
-		String s = checkACK(datapacket.getData());
+		int binToDec = -1;
+		String s = this.checkACK(datapacket.getData());
 		if (s != null) {
-
+			binToDec = 0;
 			int j = s.length() - 1;
 			for (int i = 0; i < s.length(); i++) {
 				if (s.charAt(i) == '1') {
@@ -104,7 +101,6 @@ public class Sender {
 				j--;
 			}
 		}
-
 		return binToDec;
 	}
 
@@ -124,9 +120,53 @@ public class Sender {
 		Sender sender = new Sender(hostName, portNumber, fileName, windowSize, mss);
 		DatagramSocket client = new DatagramSocket();
 
-		byte[] sendData, recieveData;
 		InetAddress IPAddress = InetAddress.getByName(sender.hostName);
-		DatagramPacket recieverData = new DatagramPacket(sender.data, sender.data.length, IPAddress, sender.portNumber);
-		client.send(recieverData);
+		int startIndex = 0, i = 0, count = 0;
+		while (startIndex < sender.NoOfPackets) {
+
+			while (i < sender.windowSize) {
+				String head = sender.createheader(count, sender.segments, startIndex);
+				byte[] headbytes = head.getBytes();
+				byte[] databytes = sender.segments.get(startIndex);
+				byte[] finalPacket = new byte[headbytes.length + sender.mss];
+				for (int k = 0; k < headbytes.length; k++) {
+					finalPacket[k] = headbytes[k];
+				}
+				for (int j = headbytes.length; j < headbytes.length + sender.mss; j++) {
+					finalPacket[j] = databytes[j];
+				}
+				DatagramPacket send = new DatagramPacket(finalPacket, finalPacket.length, IPAddress, sender.portNumber);
+				client.send(send);
+				i++;
+				startIndex++;
+			}
+			byte[] receiveData = new byte[2048];
+			int seq = 0;
+			DatagramPacket receivePckt = new DatagramPacket(receiveData, receiveData.length);
+			try {
+				client.setSoTimeout(1000);
+				while (true) { // do while the client is receiving packets
+					client.receive(receivePckt);
+					seq = sender.getpacket(receivePckt); // getting the sequence
+															// no of the
+															// received packet
+					if (seq == startIndex - 1) { // if last acknowledgement is
+													// received
+						i = 0;
+						break;
+					} else if (seq != -1) { // if last is not received, then
+											// change window size and retransmit
+											// the packets
+											// from the last received ACK.
+						i = startIndex - seq - 1;
+						startIndex = seq + 1;
+					}
+				}
+			} catch (SocketTimeoutException s) {
+				System.out.println("Timeout, sequence number = " + seq);
+			}
+
+		}
+
 	}
 }
