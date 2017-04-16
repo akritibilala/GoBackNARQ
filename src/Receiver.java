@@ -10,6 +10,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Receiver {
@@ -76,8 +77,8 @@ public class Receiver {
 				int c = 0;
 				for (int i = 0; i < checksum.length(); i++) {
 
-					if (seq.charAt(i) == '1') {
-						s = s + (int) Math.pow(2, checksum.length() - 1 - i);
+					if (checksum.charAt(i) == '1') {
+						c = c + (int) Math.pow(2, checksum.length() - 1 - i);
 					}
 				}
 				String type = receive.substring(48, 64);
@@ -91,13 +92,13 @@ public class Receiver {
 				if (type.equals("1111111111111111")) {
 					flag = 1;
 				}
-
+				byte[] d = senderData.getData();
 				double r = Math.random();
 				System.out.println("random: "+r);
 				 if (r <= rec.probability) {
 				 System.out.println("Packet Loss Sequence Number =" + s);
 				 } else{
-//				if (rec.receive(data, c) == 0) {
+				if (rec.receive(data, c) == 0) {
 					System.out.println("checksum is ok");
 					if (s == index) {
 						System.out.println("Sending ack for: "+s);
@@ -115,7 +116,7 @@ public class Receiver {
 						index++;
 					}
 				 }
-//				}
+				}
 
 				// incomingdata.write(senderData.getData());
 			} catch (Exception e) {
@@ -194,15 +195,25 @@ public class Receiver {
 		}
 		checksum = this.generateComplement(checksum);
 		// Get the complement
-		System.out.println("data Checksum: " + Integer.toBinaryString(checksum));
+		return checksum;
+	}
+
+	public int generateComplement(int checksum) {
+		System.out.println("received checksum in comp: "+checksum);
+		// Generates 15's complement of a hexadecimal value
+		checksum = Integer.parseInt("FFFF", 16) - checksum;
+		System.out.println("comp checksum in comp: "+checksum);
 		return checksum;
 	}
 
 	public int receive(String s, int checksum) {
 		int generated_checksum = this.generateChecksum(s);
+		System.out.println("received checksum: "+Integer.toBinaryString(checksum));
+		System.out.println("generated checksum: "+Integer.toBinaryString(generated_checksum));
 		// Calculate checksum of received data
 		generated_checksum = this.generateComplement(generated_checksum);
-		System.out.println("checksum comp: " + Integer.toBinaryString(generated_checksum));
+		System.out.println("comp checksum: "+Integer.toBinaryString(generated_checksum));
+		//System.out.println("checksum comp: " + Integer.toBinaryString(generated_checksum));
 		// Then get its complement, since generated checksum is complemented
 		int syndrome = generated_checksum + checksum;
 		// Syndrome is addition of the 2 checksums
@@ -210,12 +221,6 @@ public class Receiver {
 		// It is complemented
 		System.out.println("Syndrome = " + Integer.toHexString(syndrome));
 		return syndrome;
-	}
-
-	public int generateComplement(int checksum) {
-		// Generates 15's complement of a hexadecimal value
-		checksum = Integer.parseInt("FFFF", 16) - checksum;
-		return checksum;
 	}
 }
 // public String createChecksum(byte[] segment, byte[] check) {

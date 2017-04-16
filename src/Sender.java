@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,7 +23,7 @@ public class Sender {
 	int NoOfPackets;
 	InetAddress ip;
 	byte[] data;
-	ArrayList<byte[]> segments;
+	ArrayList<String> segments;
 
 	public Sender(String hostName, int portNumber, String fileName, int windowSize, int mss, InetAddress ip)
 			throws IOException {
@@ -34,6 +35,7 @@ public class Sender {
 		this.ip = ip;
 		Path file = Paths.get(fileName);
 		this.data = Files.readAllBytes(file);
+		
 		this.NoOfPackets = (int) Math.ceil((double)data.length / this.mss);
 		int j = 0;
 		int k = mss;
@@ -41,14 +43,23 @@ public class Sender {
 		System.out.println("Data length: " + data.length);
 		System.out.println("Packets: " + this.NoOfPackets);
 		System.out.println("mss: " + this.mss);
+		String dataInString = new String(data, StandardCharsets.UTF_8);
 		for (int i = 0; i < this.NoOfPackets; i++) {
-			byte[] segmentSize = new byte[this.mss];
+			if(k>dataInString.length()){
+				k=dataInString.length();
+			}
+			String segmentSize = dataInString.substring(j,k);
+			
+			
+			/*byte[] segmentSize = new byte[this.mss];
 			for (int l = 0; l < this.mss; l++) {
 				if ((l + j) < this.data.length)
 					segmentSize[l] = this.data[l + j];
-			}
+			}*/
 			j = j + mss;
-			System.out.println("size " + segmentSize.length);
+			k=k+mss;
+			
+			System.out.println("single data segment  " + segmentSize);
 			this.segments.add(i, segmentSize);
 			System.out.println(this.segments);
 		}
@@ -152,9 +163,10 @@ public class Sender {
 
 	}// remove seqno
 
-	public String createheader(int index, byte[] segment) {
+	public String createheader(int index, String segment) {
 		String seq = Integer.toBinaryString(index);
-		String check = this.generateChecksum(segment.toString());
+		System.out.println("in header data is : "+segment);
+		String check = this.generateChecksum(segment);
 		String field = "0101010101010101";
 		for (int i = seq.length(); i < 32; i++)
 			seq = "0" + seq;
@@ -224,12 +236,15 @@ public class Sender {
 			while (i < sender.windowSize && startIndex < sender.NoOfPackets) {
 				String head = sender.createheader(startIndex, sender.segments.get(startIndex));
 				byte[] headbytes = head.getBytes();
-				byte[] databytes = sender.segments.get(startIndex);
-				byte[] finalPacket = new byte[headbytes.length + sender.mss];
+				String s = sender.segments.get(startIndex);
+				byte[] databytes = s.getBytes();
+				byte[] finalPacket = new byte[headbytes.length + s.length()];
 				for (int k = 0; k < headbytes.length; k++) {
 					finalPacket[k] = headbytes[k];
 				}
-				for (int j = headbytes.length, k = 0; j < headbytes.length + sender.mss; j++, k++) {
+				System.out.println("finalPacket length : "+finalPacket.length);
+				for (int j = headbytes.length, k = 0; j < finalPacket.length; j++, k++) {
+					System.out.println("for j :" +j+" for k:"+k);
 					finalPacket[j] = databytes[k];
 				}
 				DatagramPacket send = new DatagramPacket(finalPacket, finalPacket.length, IPAddress, sender.portNumber);
