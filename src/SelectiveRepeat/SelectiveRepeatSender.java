@@ -175,12 +175,16 @@ public class SelectiveRepeatSender {
 		int seq = -1;
 		int startIndex = 0, i = 0;
 		int[] packetArray = new int[sender.windowSize];
+		int l = 0;
 
 		long rttArray[] = new long[5];
 		long startTime = System.currentTimeMillis();
 		while (startIndex < sender.NoOfPackets) {
-			while (i < sender.windowSize && startIndex < sender.NoOfPackets) {
-				for (int l = 0; l < windowSize; l++) {
+			// while (i < sender.windowSize && /*startIndex <
+			// sender.NoOfPackets*/) {
+
+			for (l = 0; l < windowSize; l++) {
+				if (startIndex < sender.NoOfPackets) {
 					if (packetArray[l] == 0 || packetArray[l] == 1 || packetArray[l] == -1) {
 						String s = sender.segments.get(startIndex);
 						String head = sender.createheader(startIndex, s);
@@ -202,10 +206,12 @@ public class SelectiveRepeatSender {
 						packetArray[l] = 1;
 					}
 					startIndex++;
-				}
+					// }
+				}else
+					break;
 			}
-			int pointer = startIndex - sender.windowSize; /////////////
-
+			// int pointer = startIndex - sender.windowSize; /////////////
+			startIndex = startIndex - l;
 			byte[] receiveData = new byte[2048];
 			int indexCopy = startIndex;
 			DatagramPacket receivePckt = new DatagramPacket(receiveData, receiveData.length);
@@ -217,24 +223,29 @@ public class SelectiveRepeatSender {
 															// no of the
 															// received packet
 					System.out.println("ACK received with seq: " + seq);
-					if (seq == indexCopy - 1) { // if last acknowledgement is
-												// received
-						i = 0;
-						startIndex = indexCopy;
-						break;
-					} else if (seq != -1) { // if last is not received, then
-											// change window size and retransmit
-											// the packets
-											// from the last received ACK.
-						int temp = seq - pointer;
+					/*
+					 * if (seq == indexCopy - 1) { // if last acknowledgement is
+					 * // received i = 0; startIndex = indexCopy; break; } else
+					 */if (seq != -1) { // if last is not received, then
+										// change window size and retransmit
+										// the packets
+										// from the last received ACK.
+						int temp = seq - startIndex;
 						packetArray[temp] = 2;
+						for(int f=0;f<windowSize;f++)
+							System.out.print(packetArray[f]+" ");
+						System.out.println();
 						if (temp == 0) {
-							System.arraycopy(packetArray, 1, packetArray, 0, packetArray.length - 1);
-							packetArray[sender.windowSize - 1] = -1;
-							startIndex = pointer + 1;
-							pointer++;
+							while (packetArray[temp] == 2) {
+								System.arraycopy(packetArray, 1, packetArray, 0, packetArray.length - 1);
+								packetArray[sender.windowSize - 1] = -1;
+								//startIndex = startIndex + 1;
+								startIndex++;
+							}
 						}
-
+						for(int f=0;f<windowSize;f++)
+							System.out.print(packetArray[f]+" ");
+						System.out.println();
 						/*
 						 * i = startIndex - seq - 1; startIndex = seq + 1;
 						 */
@@ -242,8 +253,9 @@ public class SelectiveRepeatSender {
 				}
 			} catch (SocketTimeoutException s) {
 				System.out.println("Timeout, sequence number = " + seq);
-				startIndex = seq + 1;
-				i = 0;
+				/*
+				 * startIndex = seq + 1; i = 0;
+				 */
 			}
 
 		}

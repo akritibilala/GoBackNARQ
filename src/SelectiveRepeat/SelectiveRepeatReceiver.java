@@ -97,11 +97,13 @@ public class SelectiveRepeatReceiver {
 								String indexdata;
 								indexdata = hm.get(index);
 								dataFromHash = indexdata.getBytes();
-								incomingdata.write(data.getBytes());
+								incomingdata.write(dataFromHash);
 								hm.remove(index);
 								index++;
 							}
-						} else if (s > index) {
+						}
+						else if (s > index) {
+							System.out.println("Sending ack for: " + s);
 							String ack = rec.ack.createACK(s);
 							InetAddress addr = senderData.getAddress();
 							int port = senderData.getPort();
