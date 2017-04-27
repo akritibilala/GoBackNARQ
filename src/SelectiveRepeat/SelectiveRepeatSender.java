@@ -135,9 +135,6 @@ public class SelectiveRepeatSender {
 		long rttArray[] = new long[5];
 		long startTime = System.currentTimeMillis();
 		while (startIndex < sender.NoOfPackets) {
-			// while (i < sender.windowSize && /*startIndex <
-			// sender.NoOfPackets*/) {
-
 			for (l = 0; l < windowSize; l++) {
 				if (startIndex < sender.NoOfPackets) {
 					if (packetArray[l].equals("NOTSENT") || packetArray[l].equals("SENT")
@@ -171,16 +168,11 @@ public class SelectiveRepeatSender {
 			DatagramPacket receivePckt = new DatagramPacket(receiveData, receiveData.length);
 			try {
 				client.setSoTimeout(1000);
-				while (true) { // do while the client is receiving packets
+				while (true) {
 					client.receive(receivePckt);
-					seq = sender.getpacket(receivePckt); // getting the sequence
-															// no of the
-															// received packet
+					seq = sender.getpacket(receivePckt);
 					System.out.println("ACK received with seq: " + seq);
-					if (seq != -1) { // if last is not received, then
-										// change window size and retransmit
-										// the packets
-										// from the last received ACK.
+					if (seq != -1) {
 						int temp = seq - startIndex;
 						packetArray[temp] = "ACKNOWLEDGED";
 						if (temp == 0) {
