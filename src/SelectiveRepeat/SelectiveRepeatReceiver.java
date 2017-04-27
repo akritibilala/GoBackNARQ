@@ -39,7 +39,7 @@ public class SelectiveRepeatReceiver {
 		String fileName = sc.next();
 		System.out.println("Enter the probability: ");
 		double probability = sc.nextDouble();
-		HashMap<Integer, String> hm = new HashMap();
+		HashMap<Integer, String> hm = new HashMap<Integer, String>();
 		SelectiveRepeatReceiver rec = new SelectiveRepeatReceiver(portNumber, fileName, probability);
 		DatagramSocket server = new DatagramSocket(rec.portNumber);
 		ByteArrayOutputStream incomingdata = new ByteArrayOutputStream();
@@ -101,8 +101,7 @@ public class SelectiveRepeatReceiver {
 								hm.remove(index);
 								index++;
 							}
-						}
-						else if (s > index) {
+						} else if (s > index) {
 							System.out.println("Sending ack for: " + s);
 							String ack = rec.ack.createACK(s);
 							InetAddress addr = senderData.getAddress();
@@ -118,7 +117,6 @@ public class SelectiveRepeatReceiver {
 				}
 
 			} catch (Exception e) {
-				// TODO: handle exception
 				System.err.println(e);
 			}
 		}

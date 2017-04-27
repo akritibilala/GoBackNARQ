@@ -23,6 +23,7 @@ public class Sender {
 	byte[] data;
 	ArrayList<String> segments;
 	String dataType;
+	ChecksumMethod checksummethod;
 
 	public Sender(String hostName, int portNumber, String fileName, int windowSize, int mss, InetAddress ip)
 			throws IOException {
@@ -35,6 +36,7 @@ public class Sender {
 		Path file = Paths.get(fileName);
 		this.data = Files.readAllBytes(file);
 		this.dataType = "0101010101010101";
+		this.checksummethod = new ChecksumMethod();
 
 		this.NoOfPackets = (int) Math.ceil((double) data.length / this.mss);
 		int j = 0;
@@ -52,49 +54,8 @@ public class Sender {
 		}
 	}
 
-	public String generateChecksum(String s) {
-		String hex_value = new String();
-		int x, i, checksum = 0;
-		for (i = 0; i < (s.length() - 2); i = i + 2) {
-			hex_value = "";
-			x = 0;
-			x = (int) (s.charAt(i));
-			hex_value = Integer.toHexString(x);
-			x = (int) (s.charAt(i + 1));
-			hex_value = hex_value + Integer.toHexString(x);
-			x = Integer.parseInt(hex_value, 16);
-			checksum += x;
-		}
-		if (s.length() % 2 == 0) {
-			x = (int) (s.charAt(i));
-			hex_value = Integer.toHexString(x);
-			x = (int) (s.charAt(i + 1));
-			hex_value = hex_value + Integer.toHexString(x);
-			x = Integer.parseInt(hex_value, 16);
-		} else {
-			x = (int) (s.charAt(i));
-			hex_value = "00" + Integer.toHexString(x);
-			x = Integer.parseInt(hex_value, 16);
-		}
-		checksum += x;
-		hex_value = Integer.toHexString(checksum);
-		if (hex_value.length() > 4) {
-			int carry = Integer.parseInt(("" + hex_value.charAt(0)), 16);
-			hex_value = hex_value.substring(1, 5);
-			checksum = Integer.parseInt(hex_value, 16);
-			checksum += carry;
-		}
-		checksum = this.generateComplement(checksum);
-		String check = Integer.toBinaryString(checksum);
-		for (int j = check.length(); j < 16; j++)
-			check = "0" + check;
-		return check;
-	}
+	
 
-	public int generateComplement(int checksum) {
-		checksum = Integer.parseInt("FFFF", 16) - checksum;
-		return checksum;
-	}
 
 	public void lastPacket(DatagramSocket s) {
 		byte[] lastpacket = "1111111111111111111111111111111111111111111111111111111111111111000000".getBytes();
@@ -113,7 +74,7 @@ public class Sender {
 		String seq = Integer.toBinaryString(index);
 		for (int i = seq.length(); i < 32; i++)
 			seq = "0" + seq;
-		String check = generateChecksum(segment);
+		String check = checksummethod.generateChecksumforSender(segment);
 		String field = "0101010101010101";
 		String header = seq + check + field;
 		return header;
@@ -228,61 +189,5 @@ public class Sender {
 		long endTime = System.currentTimeMillis();
 		long diff = endTime - startTime;
 		System.out.println("RTT is: " + diff);
-	}
-
-	public static String ownChecksum(String s) {
-		System.out.println("data for checksum: " + s);
-		int row = s.length() / 2;
-		int flag = 0;
-		if (s.length() % 2 != 0) {
-			row = (int) Math.ceil((double) s.length() / 2);
-			flag = 1;
-		}
-		String[] binary = new String[row];
-		for (int i = 0; i < (row); i++) {
-			String left = Integer.toBinaryString(s.charAt(i * 2));
-			for (int k = 0; k < (8 - left.length()); k++) {
-				left = "0" + left;
-
-			}
-			String right = "";
-			if (s.length() <= ((i * 2) + 1)) {
-				right += "00000000";
-				binary[i] = right + left;
-			} else {
-				right += Integer.toBinaryString(s.charAt((i * 2) + 1));
-				for (int k = 0; k < (8 - right.length()); k++) {
-					right = "0" + right;
-				}
-				binary[i] = left + right;
-			}
-		}
-		int sum = 0;
-		for (int i = 0; i < row; i++) {
-			int dec = binToDec(binary[i]);
-			sum += dec;
-		}
-		String hex = Integer.toHexString(sum);
-		while (hex.length() > 4) {
-			int carry = Integer.parseInt(hex.substring(0, 1), 16);
-			hex = hex.substring(1, hex.length());
-			sum = Integer.parseInt(hex, 16) + carry;
-		}
-		sum = 65535 - sum;
-		String pad = Integer.toBinaryString(sum);
-		for (int i = pad.length(); i < 16; i++)
-			pad = "0" + pad;
-		return pad;
-	}
-
-	public static int binToDec(String s) {
-		int dec = 0;
-		for (int i = 0; i < s.length(); i++) {
-
-			if (s.charAt(i) == '1') {
-				dec = dec + (int) Math.pow(2, s.length() - 1 - i);
-			}
-		}
-		return dec;
 	}
 }
