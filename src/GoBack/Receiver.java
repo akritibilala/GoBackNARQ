@@ -27,7 +27,6 @@ public class Receiver {
 
 	public static void main(String args[]) throws IOException {
 		int index = 0;
-
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Enter the port number: ");
 		int portNumber = sc.nextInt();
@@ -105,8 +104,8 @@ public class Receiver {
 	public int receive(String s, int checksum) {
 		int check = this.checksummethod.generateChecksum(s);
 		check = 65535 - check;
-		int syndrome = check + checksum;
-		syndrome = 65535 - syndrome;
-		return syndrome;
+		int intermidiate = check + checksum;
+		intermidiate = 65535 - intermidiate;
+		return intermidiate;
 	}
 }

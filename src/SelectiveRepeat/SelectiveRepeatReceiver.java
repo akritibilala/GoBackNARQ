@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 public class SelectiveRepeatReceiver {
-
 	int portNumber;
 	String fileName;
 	double probability;
@@ -71,7 +70,7 @@ public class SelectiveRepeatReceiver {
 				String data = receive.substring(64, receive.length());
 				if (type.equals("1111111111111111")) {
 					flag = 1;
-					break; // shayd
+					break;
 				}
 				byte[] d = senderData.getData();
 				double r = Math.random();
@@ -129,9 +128,9 @@ public class SelectiveRepeatReceiver {
 	public int receive(String s, int checksum) {
 		int check = this.checksummethod.generateChecksum(s);
 		check = 65535 - check;
-		int syndrome = check + checksum;
-		syndrome = 65535 - syndrome;
-		return syndrome;
+		int intermidiate = check + checksum;
+		intermidiate = 65535 - intermidiate;
+		return intermidiate;
 	}
 
 	public static int binToDec(String s) {

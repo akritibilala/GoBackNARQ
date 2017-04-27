@@ -54,21 +54,15 @@ public class Sender {
 		}
 	}
 
-	
-
-
 	public void lastPacket(DatagramSocket s) {
 		byte[] lastpacket = "1111111111111111111111111111111111111111111111111111111111111111000000".getBytes();
-
 		DatagramPacket lastPacket = new DatagramPacket(lastpacket, lastpacket.length, this.ip, this.portNumber);
 		try {
 			s.send(lastPacket);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-	}// remove seqno
+	}
 
 	public String createheader(int index, String segment) {
 		String seq = Integer.toBinaryString(index);
@@ -78,7 +72,6 @@ public class Sender {
 		String field = "0101010101010101";
 		String header = seq + check + field;
 		return header;
-
 	}
 
 	public String checkACK(byte[] arr) {
@@ -95,7 +88,6 @@ public class Sender {
 		} else {
 			return null;
 		}
-
 	}
 
 	public int getpacket(DatagramPacket datapacket) {
@@ -130,7 +122,6 @@ public class Sender {
 		InetAddress IPAddress = InetAddress.getByName(hostName);
 		Sender sender = new Sender(hostName, portNumber, fileName, windowSize, mss, IPAddress);
 		DatagramSocket client = new DatagramSocket();
-
 		int seq = -1;
 		int startIndex = 0, i = 0;
 		long rttArray[] = new long[5];
@@ -183,7 +174,6 @@ public class Sender {
 				startIndex = seq + 1;
 				i = 0;
 			}
-
 		}
 		sender.lastPacket(client);
 		long endTime = System.currentTimeMillis();

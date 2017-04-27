@@ -15,7 +15,6 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class SelectiveRepeatSender {
-
 	String hostName;
 	int portNumber;
 	String fileName;
@@ -40,7 +39,6 @@ public class SelectiveRepeatSender {
 		this.data = Files.readAllBytes(file);
 		this.dataType = "0101010101010101";
 		this.checksummethod = new ChecksumMethod();
-
 		this.NoOfPackets = (int) Math.ceil((double) data.length / this.mss);
 		int j = 0;
 		int k = mss;
@@ -66,7 +64,6 @@ public class SelectiveRepeatSender {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	public String createheader(int index, String segment) {
@@ -77,7 +74,6 @@ public class SelectiveRepeatSender {
 		String field = "0101010101010101";
 		String header = seq + check + field;
 		return header;
-
 	}
 
 	public String checkACK(byte[] arr) {
@@ -94,7 +90,6 @@ public class SelectiveRepeatSender {
 		} else {
 			return null;
 		}
-
 	}
 
 	public int getpacket(DatagramPacket datapacket) {
@@ -145,7 +140,8 @@ public class SelectiveRepeatSender {
 
 			for (l = 0; l < windowSize; l++) {
 				if (startIndex < sender.NoOfPackets) {
-					if (packetArray[l].equals("NOTSENT") || packetArray[l].equals("SENT") || packetArray[l].equals("NEWPACKET")) {
+					if (packetArray[l].equals("NOTSENT") || packetArray[l].equals("SENT")
+							|| packetArray[l].equals("NEWPACKET")) {
 						String s = sender.segments.get(startIndex);
 						String head = sender.createheader(startIndex, s);
 						byte[] headbytes = head.getBytes();
@@ -166,7 +162,6 @@ public class SelectiveRepeatSender {
 						packetArray[l] = "SENT";
 					}
 					startIndex++;
-					// }
 				} else
 					break;
 			}
@@ -201,7 +196,6 @@ public class SelectiveRepeatSender {
 			} catch (SocketTimeoutException s) {
 				System.out.println("Timeout, sequence number = " + seq);
 			}
-
 		}
 		sender.lastPacket(client);
 		long endTime = System.currentTimeMillis();

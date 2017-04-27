@@ -18,7 +18,6 @@ public class ChecksumMethod {
 		checksum = this.reverse(checksum);
 		return checksum;
 	}
-
 	public String generateChecksumforSender(String s) {
 		String checksumString = new String();
 		int  i = 0, checksum = 0;
@@ -37,7 +36,6 @@ public class ChecksumMethod {
 			check = "0" + check;
 		return check;
 	}
-
 	public int reverse(int checksum) {
 		checksum = 65535 - checksum;
 		return checksum;
@@ -58,7 +56,6 @@ public class ChecksumMethod {
 		}
 		return checksum;
 	}
-
 	public int checkCondition(String s, int i) {
 		String checksumString = new String();
 		int pointer;

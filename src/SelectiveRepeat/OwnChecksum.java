@@ -30,8 +30,6 @@ public class OwnChecksum {
 		}
 		int sum = 0;
 		for (int i = 0; i < row; i++) {
-//			int dec = binToDec(binary[i]);
-//			sum += dec;
 		}
 		String hex = Integer.toHexString(sum);
 		while (hex.length() > 4) {
